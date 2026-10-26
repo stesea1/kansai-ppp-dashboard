@@ -88,7 +88,7 @@ for fn in ['pre_166.html','pre_167.html','pre_168.html']:
 upd = {}
 today = dt.date(2026, 10, 26)
 for l in lines('pre_103.html'):
-    g = re.match(r'令和(\d+)年(\d+)月(\d+)日 (\S+?[都道府県])(\S+?) の', l)
+    g = re.match(r'令和(\d+)年(\d+)月(\d+)日 (北海道|東京都|京都府|大阪府|\S{2,3}?県)(\S+?) の', l)  # W3 fix: was (\S+?[都道府県]) which cut 京都府 at 京都
     if g:
         d = dt.date(2018+int(g[1]), int(g[2]), int(g[3]))
         if (today-d).days <= 365: upd[g[4]+norm(g[5])] = upd.get(g[4]+norm(g[5]), 0)+1

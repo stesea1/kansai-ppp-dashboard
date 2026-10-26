@@ -6,6 +6,7 @@ Nothing is invented: rows without a verifiable date (and not fiscal-year-dated) 
 import re, html, urllib.parse, datetime as dt
 import pandas as pd
 import polite
+from signals_municipalize import municipalize, ASSOC
 from signals_common import *
 
 out, dropped = [], []
@@ -33,12 +34,7 @@ S = pd.read_csv(D + 'signals_seed_urls.csv', dtype=str).fillna('')
 def do_page(url, code6, pref, src, via=''):
     h, fu, st = polite.get(url)
     if not h or st != 200: dropped.append((src, code6, '', url, f'status {st}')); return
-    full = title_of(h); segs = [x.strip() for x in re.split(r'[｜|／]| - ', full) if x.strip()]
-    t = segs[0] if segs else full
-    if len(t) <= 8:  # site-name-only first segment (e.g. '赤穂市｜…'): use <h1> or the longest segment
-        h1 = re.search(r'<h1[^>]*>(.*?)</h1>', h, re.S)
-        h1 = re.sub(r'\s+', ' ', html.unescape(re.sub('<[^>]+>', '', h1.group(1)))).strip() if h1 else ''
-        t = h1 if len(h1) > 8 else max(segs, key=len, default=t)
+    t = page_title(h)
     c = code6 or find_muni(t + ' ' + text_of(h)[:600], pref)
     if not c: dropped.append((src, '', t, url, 'no municipality')); return
     d, b = page_date(h)
@@ -66,20 +62,26 @@ for s in S.itertuples():
         if n > 25: break
         do_page(u, code6 if s.muni else c2, s.pref, 'municipal_site_list', via=s.url)
 
+# association-board rows -> municipal originals or facts-only (no association text kept)
+out = [r for r in out if r['type'] != 'other']
+for r in out: r.setdefault('title_basis', 'source page title'); r.setdefault('ref_url', '')
+mst, mlog = municipalize(out)
+print('association rows:', mst)
+pd.DataFrame(mlog, columns=['url', 'result']).to_csv('/workspace/ppp-dashboard/raw/signals/municipalize_log.csv', index=False)
 df = pd.DataFrame(out)
-df = df[df.type != 'other']
 df['pref'] = df.code6.map(lambda c: NAME[c][0]); df['muni'] = df.code6.map(lambda c: NAME[c][1])
 def inwin(r):
     if r.date: return in24(dt.date.fromisoformat(r.date))
     return r.fy in ('2025', '2026')  # FY2025 (2025-04..2026-03) and FY2026 (2026-04..) lie inside the window; FY2024 only partly -> excluded
 df['in_24m'] = df.apply(inwin, axis=1)
 # dedupe: same municipality + url (prefer dated/most specific source order), then same muni+title+date
-pri = {'municipal_site_search': 0, 'municipal_site_list': 1, 'mlit_kanmin_sounding': 2, 'cao_pfi_database': 3, 'pfikyokai_public_notices': 4}
+pri = {'municipal_site_search': 0, 'municipal_site_list': 1, 'municipal_page_via_board': 2, 'mlit_kanmin_sounding': 3, 'cao_pfi_database': 4, 'municipal_document_via_board': 5, 'pfikyokai_board_fact': 6}
 df['_p'] = df.source.map(lambda s: pri.get(s, 5))
-df['_t'] = df.title.map(norm)
-df = df.sort_values(['_p', 'date']).drop_duplicates(['code6', 'url', 'type']).drop_duplicates(['code6', '_t', 'date'])
-win = df[df.in_24m].drop(columns=['_p', '_t', 'in_24m']).sort_values(['date', 'code6'], ascending=[False, True])
-cols = ['code6', 'pref', 'muni', 'date', 'date_basis', 'fy', 'type', 'facility_type', 'title', 'url', 'source', 'via_url']
+df['_u'] = df.url.where(df.url != '', df.ref_url + '#' + df.index.astype(str))  # facts-only rows never merge on an empty URL
+df['_t'] = df.title.map(norm).where(df.title_basis.str.startswith('neutral') == False, df._u)  # neutral labels are not item titles
+df = df.sort_values(['_p', 'date']).drop_duplicates(['code6', '_u', 'type']).drop_duplicates(['code6', '_t', 'date'])
+win = df[df.in_24m].drop(columns=['_p', '_t', '_u', 'in_24m']).sort_values(['date', 'code6'], ascending=[False, True])
+cols = ['code6', 'pref', 'muni', 'date', 'date_basis', 'fy', 'type', 'facility_type', 'title', 'title_basis', 'url', 'source', 'via_url', 'ref_url']
 win[cols].to_csv(D + 'signals.csv', index=False)
 pd.DataFrame(dropped, columns=['source', 'code6', 'title', 'url', 'reason']).to_csv('/workspace/ppp-dashboard/raw/signals/dropped.csv', index=False)
 print('signals', len(win), 'dropped', len(dropped), 'out-of-window', (~df.in_24m).sum())

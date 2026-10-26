@@ -77,3 +77,22 @@ def facility(title):
     hits = [k for k, p in FAC if re.search(p, title)]
     return hits[0] if hits else ''
 def in24(d): return d is not None and START <= d <= TODAY
+def page_title(h):
+    """the page's own item title: first <title> segment, or <h1>/longest segment when the first segment is only the site name"""
+    full = title_of(h); segs = [x.strip() for x in re.split(r'[｜|／]| - ', full) if x.strip()]
+    t = segs[0] if segs else full
+    if len(t) <= 8:
+        h1 = re.search(r'<h1[^>]*>(.*?)</h1>', h or '', re.S)
+        h1 = re.sub(r'\s+', ' ', html.unescape(re.sub('<[^>]+>', '', h1.group(1)))).strip() if h1 else ''
+        t = h1 if len(h1) > 8 else max(segs, key=len, default=t)
+    return t
+GOV_HOST = r'(\.lg\.jp$|^(www\d*\.)?(city|town|vill|pref)\.|\.(city|town|vill)\.|^www\.nishi\.or\.jp$)'
+TYPE_JA = {'sounding': 'サウンディング型市場調査', 'sounding_result': 'サウンディング結果公表', 'jisshi_houshin': '実施方針公表',
+           'fs': '導入可能性調査', 'minkan_teian': '民間提案募集', 'procurement': 'PPP/PFI等 事業者公募・選定',
+           'shitei_kanri': '指定管理者公募', 'pre_update': 'PRE掲載更新'}
+FAC_JA = {'water_sewer': '上下水道', 'waste': '廃棄物処理', 'school': '学校', 'school_meal': '給食', 'housing': '住宅', 'park': '公園',
+          'cityhall': '庁舎', 'library': '図書館', 'gym_pool': 'スポーツ施設', 'hall_culture': '文化・交流施設', 'crematorium': '斎場',
+          'welfare': '福祉施設', 'tourism': '観光施設', 'lighting_energy': 'エネルギー・照明', 'land_reuse': '未利用地・跡地'}
+def neutral_label(typ, fac):
+    """our own wording; contains no third-party text"""
+    return f"{TYPE_JA.get(typ, typ)}（{FAC_JA[fac] + '・案件名不明' if fac in FAC_JA else '施設名不明'}）"

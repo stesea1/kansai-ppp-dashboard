@@ -43,7 +43,7 @@ Author: Hao Yue
 
 ### ライセンス
 - **コード**（`scripts/`、`web/*.html`、自作 JS）: MIT（[LICENSE](LICENSE)）。`web/echarts.min.js` は Apache ECharts（Apache License 2.0）。
-- **加工データ**（`data/`、`web/data.js`、`web/geo.js`）: CC BY 4.0（[LICENSE-DATA.md](LICENSE-DATA.md)）。表示例:「関西PPP/PFIパイプライン・ダッシュボード (Hao Yue), CC BY 4.0」。あわせて原典（PDL1.0 等、CC BY 4.0 互換）の出典と加工した旨を記載してください。シグナルの件名・URL および日本PFI・PPP協会「お知らせ」由来の行は CC BY の対象外です（LICENSE-DATA.md 参照）。
+- **加工データ**（`data/`、`web/data.js`、`web/geo.js`）: CC BY 4.0（[LICENSE-DATA.md](LICENSE-DATA.md)）。表示例:「関西PPP/PFIパイプライン・ダッシュボード (Hao Yue), CC BY 4.0」。あわせて原典（PDL1.0 等、CC BY 4.0 互換）の出典と加工した旨を記載してください。シグナルの件名・URL（各団体のページから引用）は CC BY の対象外です。日本PFI・PPP協会「お知らせ」欄は発見用の索引としてのみ使い、協会の文章は含みません（LICENSE-DATA.md 参照）。
 
 作成者: Hao Yue
 
