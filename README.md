@@ -1,126 +1,41 @@
-# 关西 PPP/PFI × 公共设施老化 看板（v0 + 可选 v1，第2周）
+# Kansai PPP/PFI Pipeline Dashboard / 関西 PPP/PFI パイプライン・ダッシュボード
 
-免费、离线可用的静态看板。为关西各市町村计算一个透明的 "PPP pipeline score"（早期信号层）。打开 `web/index.html` 即可，无需联网。
+**Live site / 公開ページ:** https://stesea1.github.io/kansai-ppp-dashboard/
 
-## 目录
-- `raw/`：官方原始文件（未修改）
-- `data/municipalities_raw.csv`：团体主表（244 个团体：关西 6 府县 198 个 + 三重 29 个 + 福井 17 个）
-- `data/kansai_municipalities.csv`：合并后的宽表，每个团体一行，包含全部指标和分项分
-- `data/scores.csv`：总分、数据覆盖率、排名
-- `data/sources_inventory.csv`：数据源清单（URL、格式、时点、更新频率、许可、是否已下载）
-- `data/kansai_muni.geojson`：N03 行政区划边界，已按市町村合并并简化
-- `scripts/geo.py`：生成边界；`scripts/build.py`：合并数据并打分，生成 `web/data.js` 和 `web/geo.js`
-- （W2）`scripts/extract_shisetsu.py`：从财政状况资料集 xlsx 的绘图文本框中抽取设施类型别减价偿却率 → `data/shisetsu_long_raw.csv`；以及团体整体的减价偿却率 → `data/overall_ageing_zaisei.csv`（日志：`data/shisetsu_extract_log.csv`）
-- （W2）`scripts/nenkan.py`、`scripts/water.py`：解析地方公营企业年鉴个表 → `data/water_nenkan_r06_raw.csv`、`data/sewer_nenkan_r06_raw.csv`、`data/water_sewer_r06.csv`
-- （W2）`scripts/preview.py`：屏蔽全部网络请求后截图 → `preview.png`（默认视图）、`preview_facility.png`（v1 + 一般废弃物处理设施视图）
-- `web/index.html`：看板，使用本地 echarts.min.js 5.6.0（Apache-2.0）
-- `preview.png`：无头浏览器截图，截图时屏蔽了全部网络请求，证明离线可用
+![Dashboard preview](preview.png)
 
-重建：`python3 scripts/geo.py && python3 scripts/extract_shisetsu.py && python3 scripts/water.py && python3 scripts/build.py && python3 scripts/preview.py`
+## English
 
-## 数据源（详见 sources_inventory.csv）
-- 总务省
-  - 团体代码（R6.1.1）
-  - 统一基准财务书类指标 R6（有形固定资产减价偿却率）
-  - 主要财政指标 R6（财政力指数）
-- 内阁府
-  - PFI 事业基础 DB（R7.3.31）
-  - 地方公共团体 PPP 信息清单 R7
-  - 优先的检讨规程策定状况（R7.3 末，PDF，人工读取）
-- 国交省
-  - PRE 门户（HTML 抓取，2026-10-26）
-  - 国土数值信息 N03 2024
-- 社人研：R5 地域别将来推计人口
-- （W2）总务省 财政状况资料集（令和6年度决算）：施设类型别存量信息分析表①②（16 类，R06 当该值、类似团体平均、类似团体内顺位），以及公会计指标分析表中的整体减价偿却率
-- （W2）总务省 地方公营企业年鉴 R6（令和6年度决算）：水道、公共下水道个表
+A free, open-data dashboard that shows **which municipalities in the Kansai region are likely to launch PPP/PFI projects next**, by combining public-facility ageing data with each municipality's PPP track record and readiness.
 
-## 年度核实（W2）
-- 财务书类指标 R6（`ageing_rate`）= 令和6年度决算。依据：与财政状况资料集 R06 当该值对比，213 个两者都有的团体中 122 个完全一致，差值中位数 0；与 R05 只有 2 个一致。其余是小幅差异（多数在 ±1 以内，吹田市 59.6 对 66.1 等个别差距较大，原因未查明）。
-- 财政状况资料集：文件标题为"令和6年度"，图表横轴最新为 R06 → 令和6年度决算。
-- 公营企业年鉴：页面标题为"令和6年度地方公营企业年鉴" → 令和6年度决算。
-- 主要财政指标 R6 的决算年度仍待核实（W1 遗留）。
+- **Coverage:** 198 municipalities in Osaka, Kyoto, Hyogo, Nara, Wakayama and Shiga, plus Mie (29) and Fukui (17) as an option — 244 in total.
+- **What you can see:**
+  - A map and sortable table of a transparent *PPP pipeline score* for every municipality (v0, and an optional v1 that uses facility-type ageing).
+  - Ageing rates (有形固定資産減価償却率) for the municipality overall and for 16 facility types — schools, public housing, gyms and pools, libraries, waste-treatment plants, city halls and more — compared with the average of similar municipalities.
+  - Water-pipe and sewer-pipe ageing, calculated from the FY2024 (令和6年度) Local Public Enterprise Yearbook.
+  - An **"untapped" list**: mid-sized and small cities (population 20,000–200,000) with severe facility ageing but no PPP priority-review rule (優先的検討規程) and almost no PFI track record yet.
+- **Score components (v0):** facility ageing 30%, PFI track record 20%, priority-review rule 15%, PPP organisation 10%, listings on MLIT's PRE portal 10%, population 10%, fiscal capacity 5%. Missing data is never imputed; the remaining weights are re-normalised and data coverage is shown.
+- **Data sources:** Ministry of Internal Affairs and Communications (財務書類指標, 財政状況資料集, 地方公営企業年鑑, 主要財政指標), Cabinet Office PFI database and PPP information list, MLIT PRE portal and National Land Numerical Information (N03), and IPSS population projections. All data is processed from official open data; see `data/sources_inventory.csv`.
+- **Limitations:** the score leans towards large cities, weights are set by judgement and not yet back-tested against actual tenders, and some data is missing (e.g. facility-type data for Shiga). Treat it as a first screen, not as investment or business advice.
+- **Rebuild:** `python3 scripts/geo.py && python3 scripts/extract_shisetsu.py && python3 scripts/water.py && python3 scripts/build.py`
 
-## 评分方法 v0
-各分项先换算成 0–100 分，再加权平均：
+Author: Hao Yue
 
-| 分项 | 权重 | 计算方法 |
-|---|---|---|
-| 老化 | 30 | 有形固定资产减价偿却率在 244 个团体中的百分位 |
-| PFI 实绩 | 20 | log(1+PFI 总件数) + 2×log(1+2020 年 4 月以后公布实施方针的件数)，再按最大值归一 |
-| 优先的检讨规程 | 15 | R7.3 末已策定记 100，否则记 0 |
-| PPP 体制 | 10 | 以下 3 项中有几项为 ○ 的比例：总合管理计划写明 PPP 方针、民间提案一元窗口、事业清单公开 |
-| PRE 门户 | 10 | log(1+当前刊登件数+近 12 个月更新次数)，再按最大值归一 |
-| 财政力 | 5 | 财政力指数百分位。按"实施能力和对民间的吸引力"计为正向；也可以理解为"需求"而取反，v0 选择了正向 |
-| 人口规模 | 10 | log(2020 年人口) 的百分位 |
+## 日本語
 
-- 缺失值不补。某个分项缺失时，不计入该分项，其余权重重新归一，并显示数据覆盖率（coverage）。覆盖率低于 60% 时不出分（目前没有团体低于这条线）。
-- "PFI 件数=0" 的意思是 PFI 法 DB 里没有该团体的事业，不代表没有其他 PPP（例如指定管理）。
-- 附加参考列（不计分）：
-  - 2026–2030 年度 PFI 契约到期件数（可能出现再招标的信号）
-  - 2050 年人口增减率
-  - 经常收支比率、将来负担比率
+関西の市町村のうち、**次に PPP/PFI 事業が動き出しそうな自治体はどこか**を、公共施設の老朽化データと各自治体の PPP 実績・体制を組み合わせて可視化する、無料のオープンデータ・ダッシュボードです。
 
-## W2 新增内容
-- 宽表新增列：
-  - `fac_<类型>`（R06 值）、`fac_<类型>_ruiji`（类似团体平均）、`fac_<类型>_rank`
-    - 类型：road、bridge、housing、port、nursery、school、jidokan、kominkan、library、gym、welfare、hall、waste、health、fire、cityhall
-  - `ageing_rate_all`、`ageing_src`、`ageing_rate_zaisei_R05_ref`（仅作参考，不计分）
-  - `w_pipe_ageing`、`w_dep_rate`、`w_src`、`s_pipe_ageing`、`s_dep_rate`、`s_src`
-  - `s_ageing_v1`、`score_v1`、`rank_v1_*`、`worst_facility`、`n_fac_above_ruiji`、`untapped`、`untapped_rank`
-- 整体减价偿却率：原来缺 12 个团体，用财政状况资料集 R06 当该值补上 4 个（海南市 65.8、洲本市 67.2、丹波篠山市 50.7、かつらぎ町 68.8），覆盖 236/244。其余 8 个（箕面、名张、八幡、播磨、南あわじ、小浜、福崎、御浜）的 R06 值为"-"，不补。v0 保持 W1 口径，只用财务书类指标；v1 使用补齐后的值。
-- 水道管路经年化率、下水管渠老化率：用年鉴个表中的延长自行计算，口径与经营比较分析表相同。抽查结果与 JWWA R5 版数值接近。
-  - 水道：
-    - 自团体上水道 196 个，简易水道（法适用）25 个
-    - 企业团整体值 22 个：大阪广域 14（构成团体为推定）、淡路广域 3、磯城郡 3、长滨 1、西播磨 1
-    - 缺 1 个：爱荘町
-  - 下水道（公共下水道，法适用）：187 个
-- v1（可选）：
-  - 老化分项 = 50% 整体偿却率百分位 + 50% "重点领域类型百分位的平均"。只有在至少 3 类有数据时才计算类型平均。
-  - 纳入的类型共 14 项：厅舍、学校、公营住宅、体育馆·泳池、一般废弃物处理、图书馆、公民馆、市民会馆、福祉设施、保育所等、道路、桥梁、水道管路（不含简易水道）、下水管渠。
-  - 其余权重与 v0 相同。v0 与 v1 的 Spearman 相关系数为 0.97。
-  - 火葬场、病院没有可用数据，不纳入。
-- 未开拓（untapped）判定，以下条件同时满足：
-  - 2020 年人口 2 万–20 万，且不是政令市
-  - v1 老化分项 ≥ 60（244 个团体中前 40%）
-  - R7.3 末未策定优先的检讨规程
-  - PFI 件数 0–1
-  - 当前共 33 个团体，按 v1 老化分项排序。
-- 看板：
-  - 新增版本切换（v0/v1）和地图/表格着色指标选择：整体偿却率、16 类设施、水道、下水道。
-  - 选中设施类型时，表格会增加该类型的值、类似团体平均和顺位。
-  - 未开拓团体在地图上加红框、在表格中用浅红底色。
-  - 新增未开拓列表。
+- **対象:** 大阪・京都・兵庫・奈良・和歌山・滋賀の 198 市町村（オプションで三重 29・福井 17、計 244 団体）。
+- **主な機能:**
+  - 全団体の「PPP パイプライン・スコア」を地図と並べ替え可能な一覧表で表示（v0、および施設類型別の老朽化を用いる v1）。
+  - 有形固定資産減価償却率（団体全体および学校・公営住宅・体育館/プール・図書館・一般廃棄物処理施設・庁舎など 16 類型）と、類似団体平均との比較。
+  - 令和6年度地方公営企業年鑑から算出した水道管路経年化率・下水道管渠老朽化率。
+  - **「未開拓」リスト:** 人口 2 万〜20 万の中小都市のうち、老朽化が進んでいるのに優先的検討規程が未策定で、PFI 実績もほとんどない団体。
+- **スコア構成（v0）:** 老朽化 30%、PFI 実績 20%、優先的検討規程 15%、PPP 体制 10%、PRE ポータル掲載 10%、人口規模 10%、財政力 5%。欠損値は補完せず、残りの重みで再計算し、データ充足率を表示します。
+- **出典:** 総務省（財務書類指標・財政状況資料集・地方公営企業年鑑・主要財政指標）、内閣府（PFI 事業データベース・地方公共団体 PPP 情報リスト・優先的検討規程の策定状況）、国土交通省（PRE ポータル・国土数値情報 N03）、国立社会保障・人口問題研究所（地域別将来推計人口）。いずれも公開データを加工して作成しています。詳細は `data/sources_inventory.csv` を参照してください。
+- **留意点:** スコアは大都市に有利な傾向があり、重みは主観的に設定したもので実際の入札結果による検証はまだです。一部データ（滋賀県の施設類型別データなど）が欠けています。一次的なスクリーニングとしてご利用ください。
 
-## 局限
-1. 评分偏向大城市。人口、PFI 实绩、优先的检讨规程都与规模高度相关。去掉人口分项后，前 10 名基本不变。v0 适合用来做"可能发包"的初筛，不能当作商机排名。
-2. 整体偿却率还缺 8 个团体。设施类型数据缺滋贺县 19 个团体（府县发布的 xlsx 里没有施设类型表，概要版 PDF 里也没有）和箕面市，所以滋贺各团体的 v1 实际上只用整体值、水道和下水道（例如日野町只有 2 项类型数据）。火葬场、病院没有数据。
-   - 公营企业相关的局限：
-     - 企业团的值是企业团整体的数值，不是单个团体的值。
-     - 大阪广域水道企业团的构成团体是按"本团体没有自营事业"推定的。
-     - 简易水道和小规模事业的数值波动大，个别出现 0 或 99.9，原样保留。
-     - 下水道只统计公共下水道（法适用），只有特环、农集排的町村，以及流域下水道，都还没有纳入。
-     - 下水的减价偿却率受法适用时间影响（刚转为法适用的团体数值偏低），只展示，不计分。
-3. PRE 门户由团体自愿刊登，覆盖不全。情报一览只是一份更新日志，无法准确得到发布日期；明石市一家就刊登了 43 件，会拉高它的得分。
-4. 优先的检讨规程是从 PDF 地图和列表人工转记的，存在漏读的可能。转记结果与 PPP 清单中 R6.3 一栏的 40 个团体没有矛盾，R7.3 为 42 个团体。
-5. 各数据源时点不一致（2024–2026）。财务书类和财政指标对应的决算年度还需要逐一核实。
-6. 权重是主观设定，没有经过实际招标结果的验证。
+作成者: Hao Yue
 
-## 第 2–6 周计划
-- W2（已完成：设施类型、上下水道、v1、未开拓）
-  - 尚未做：PRE 门户定期抓取及历史快照
-  - 尚未做：从滋贺各市町官网补抓财政状况资料集
-- W3
-  - 抓取各市官网和府县 PPP 平台上的 sounding 型市场调查及实施方针公告（只读），加上日期，建立"近 24 个月信号"
-- W4
-  - 用 2015–2024 年的 PFI DB 做回测：v0 分数能否预测之后 2 年的实施方针公布，并据此调整权重
-- W5
-  - 团体详情页（时间线、契约到期、原文链接）
-  - 英文版
-- W6
-  - 发布前检查许可和出处标注，发布到 GitHub Pages
-
-## 以后发布到 GitHub Pages 的步骤（尚未执行）
-1. 新建 public repo，把 `web/` 目录的内容（index.html、echarts.min.js、data.js、geo.js）放在根目录，或放在 `docs/` 下
-2. Settings → Pages → Source 选择 main 分支的 /(root) 或 /docs
-3. 在页面脚注中保留出处："总务省・内阁府・国交省（国土数值信息）・社人研的数据经加工制作"
-4. raw/ 只发布脚本和 URL，不必上传原始文件
+---
+中文技术说明 / Technical notes (Chinese): [README_zh.md](README_zh.md)
