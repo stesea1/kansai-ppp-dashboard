@@ -159,6 +159,23 @@ m['coverage_v1_pct'] = (a1*w1).sum(axis=1)/w1.sum()*100
 m['score_v1'] = ((m[c1].fillna(0)*w1).sum(axis=1)/(a1*w1).sum(axis=1)).where(m['coverage_v1_pct'] >= 60)
 m['rank_v1_core'] = m['score_v1'].where(m['region']=='core').rank(ascending=False, method='min')
 m['rank_v1_all'] = m['score_v1'].rank(ascending=False, method='min')
+# ---------- v1+ (optional, week 3): 直近24ヶ月シグナル成分を v1 に追加（v0/v1 は変更しない）----------
+# data/signals.csv（scripts/signals_collect.py + signals_resolve.py）: 2024-10-26〜2026-10-26 の公表シグナル
+SIG = pd.read_csv(D+'signals.csv', dtype={'code6':str, 'fy':str}).fillna('')
+SIG_TW = {'jisshi_houshin':3, 'procurement':3, 'fs':2, 'sounding':2, 'sounding_result':2, 'minkan_teian':2, 'shitei_kanri':0.5, 'pre_update':0.5}
+SIG['w'] = SIG['type'].map(SIG_TW).fillna(0)
+g = SIG.groupby('code6')
+m['signals_24m_n'] = m['code6'].map(g.size()).fillna(0).astype(int)
+for t in SIG_TW: m['sig_'+t] = m['code6'].map(SIG[SIG.type==t].groupby('code6').size()).fillna(0).astype(int)
+m['last_signal_date'] = m['code6'].map(SIG[SIG.date!=''].groupby('code6')['date'].max())
+sig_raw = np.log1p(m['code6'].map(g['w'].sum()).fillna(0))
+m['s_signal'] = sig_raw/sig_raw.max()*100   # 0 = 収集範囲内でシグナル未検出（収集は網羅的ではない）
+W1P = dict(W1); W1P['s_signal'] = 10
+c1p = list(W1P); w1p = pd.Series(W1P); a1p = m[c1p].notna()
+m['coverage_v1plus_pct'] = (a1p*w1p).sum(axis=1)/w1p.sum()*100
+m['score_v1plus'] = ((m[c1p].fillna(0)*w1p).sum(axis=1)/(a1p*w1p).sum(axis=1)).where(m['coverage_v1plus_pct'] >= 60)
+m['rank_v1plus_core'] = m['score_v1plus'].where(m['region']=='core').rank(ascending=False, method='min')
+m['rank_v1plus_all'] = m['score_v1plus'].rank(ascending=False, method='min')
 # 最も老朽化した類型（R06値, 類似団体平均との差つき）
 def worst(r):
     best = None
@@ -180,10 +197,10 @@ m['untapped'] = m['midsmall'] & (m['s_ageing_v1'] >= 60) & ~m['yuusen_r7_3'] & (
 m['untapped_rank'] = m['s_ageing_v1'].where(m['untapped']).rank(ascending=False, method='first')
 m = m.sort_values('score_v0', ascending=False)
 m.drop(columns=['key']).to_csv(D+'kansai_municipalities.csv', index=False, encoding='utf-8-sig')
-m[['code6','pref','muni','region','score_v0','coverage_pct','rank_core','rank_all']+cols+['score_v1','coverage_v1_pct','rank_v1_core','rank_v1_all','s_ageing_v1','untapped','untapped_rank']].round(1).to_csv(D+'scores.csv', index=False, encoding='utf-8-sig')
+m[['code6','pref','muni','region','score_v0','coverage_pct','rank_core','rank_all']+cols+['score_v1','coverage_v1_pct','rank_v1_core','rank_v1_all','s_ageing_v1','untapped','untapped_rank','signals_24m_n','last_signal_date','s_signal','score_v1plus','rank_v1plus_core','rank_v1plus_all']].round(1).to_csv(D+'scores.csv', index=False, encoding='utf-8-sig')
 out = m.drop(columns=['key']).replace({np.nan: None}).round(2).to_dict('records')
 open(W+'data.js','w').write('window.PPP_DATA='+json.dumps(out, ensure_ascii=False, default=lambda o: o.item() if hasattr(o,'item') else str(o))+
-    ';\nwindow.PPP_WEIGHTS='+json.dumps(WEIGHTS)+';\nwindow.PPP_WEIGHTS_V1='+json.dumps(W1)+';\nwindow.PPP_FAC='+json.dumps(FAC, ensure_ascii=False)+';\nwindow.PPP_BUILT="'+str(today)+'";\n')
+    ';\nwindow.PPP_WEIGHTS='+json.dumps(WEIGHTS)+';\nwindow.PPP_WEIGHTS_V1='+json.dumps(W1)+';\nwindow.PPP_WEIGHTS_V1PLUS='+json.dumps(W1P)+';\nwindow.PPP_SIG_TW='+json.dumps(SIG_TW)+';\nwindow.PPP_SIGNALS='+json.dumps(SIG.drop(columns=['w']).to_dict('records'), ensure_ascii=False)+';\nwindow.PPP_FAC='+json.dumps(FAC, ensure_ascii=False)+';\nwindow.PPP_BUILT="'+str(today)+'";\n')
 geo = json.load(open(D+'kansai_muni.geojson'))
 open(W+'geo.js','w').write('window.PPP_GEO='+json.dumps(geo, ensure_ascii=False, separators=(',',':'))+';\n')
 # diagnostics
@@ -195,6 +212,9 @@ print('unmatched pre keys', set(pre_list)-set(m.key), set(upd)-set(m.key))
 print('no score', m.loc[m.score_v0.isna(),'muni'].tolist())
 print(m[m.region=='core'].head(15)[['pref','muni','score_v0','coverage_pct','ageing_rate','pfi_total','pfi_since_fy2020','yuusen_r7_3','s_ready','pre_listings_now','pre_updates_12m','fiscal_index','pop2020']].round(1).to_string())
 
+print('--- week3 ---')
+print('signals', len(SIG), 'munis with signal', int((m.signals_24m_n>0).sum()), 'v1plus scored', int(m.score_v1plus.notna().sum()))
+print(m[m.untapped].sort_values('untapped_rank')[['pref','muni','signals_24m_n','last_signal_date','s_signal','score_v1','score_v1plus']].round(1).to_string())
 print('--- week2 ---')
 print('fac coverage', {c: int(m[c].notna().sum()) for c in V1F}, 'files', int(m.fac_file_found.sum()))
 print('ageing_all', m.ageing_rate_all.notna().sum(), m.ageing_src.value_counts().to_dict())

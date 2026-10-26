@@ -1,5 +1,5 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>関西 PPP/PFI パイプライン・スコア v0/v1 | Kansai PPP Pipeline Score</title>
+<title>関西 PPP/PFI パイプライン・スコア v0/v1/v1+ | Kansai PPP Pipeline Score</title>
 <script src="echarts.min.js"></script><script src="data.js"></script><script src="geo.js"></script>
 <style>
 body{font-family:"Noto Sans JP","Hiragino Sans",sans-serif;margin:0;background:#f6f7f9;color:#222}
@@ -13,7 +13,7 @@ td:nth-child(2),td:nth-child(3),th:nth-child(2),th:nth-child(3){text-align:left}
 <header><h1>関西 公共施設老朽化 × PPP/PFI パイプライン・スコア v0 / v1 <span style="font-weight:normal;font-size:14px">/ Kansai PPP Pipeline Score (prototype)</span></h1>
 <p>早期シグナル指標（試作）。公的オープンデータのみ使用・欠損は補完せず「NA」表示。Early-signal prototype from official open data; missing values are NOT imputed. <span id="built"></span></p></header>
 <div class="wrap">
-<div class="card full ctl" style="margin:0">スコア版 Score: <select id="ver"><option value="v0">v0（全体減価償却率）</option><option value="v1">v1（施設類型別・上下水道を加味, 試行）</option></select>
+<div class="card full ctl" style="margin:0">スコア版 Score: <select id="ver"><option value="v0">v0（全体減価償却率）</option><option value="v1">v1（施設類型別・上下水道を加味, 試行）</option><option value="v1plus">v1+（v1 + 直近24ヶ月シグナル, 試行）</option></select>
  地図・表の色 Map metric: <select id="met"></select>
  <label><input type="checkbox" id="hl" checked> 「未開拓」を赤枠で強調 highlight untapped</label>
  <small>未開拓 untapped = 人口2万〜20万(政令市除く) × v1老朽化成分 上位40% × 優先的検討規程なし(R7.3末) × PFI 0〜1件</small></div>
@@ -21,31 +21,37 @@ td:nth-child(2),td:nth-child(3),th:nth-child(2),th:nth-child(3){text-align:left}
 <div class="card"><h2 id="barh">上位30団体 Top 30</h2><div id="bar"></div></div>
 <div class="card full"><h2>未開拓リスト Untapped mid/small cities（v1老朽化成分順）</h2><div class="tbl" style="max-height:360px"><table id="u"></table></div>
 <p><small>施設類型値 = 総務省 財政状況資料集「施設類型別ストック情報分析表」令和6年度決算(R06)当該値。上水道 = 管路経年化率、下水道 = 管渠老朽化率（地方公営企業年鑑 令和6年度決算 個表の延長から算出）。企業団の値は構成団体全体の値。NA = 未公表/未取得、補完なし。</small></p></div>
+<div class="card full"><h2>直近24ヶ月シグナル Recent signals (2024-10-26 – 2026-10-26)</h2>
+<div class="ctl">府県 Pref: <select id="sp"><option value="">全て all</option></select> 市町村 Municipality: <input id="sm" size="10">
+ 種別 Type: <select id="st"><option value="">全て all</option></select> <label><input type="checkbox" id="su"> 未開拓のみ untapped only</label> <span id="sn"></span></div>
+<div id="tl" style="height:260px"></div><div class="tbl" style="max-height:420px"><table id="sl"></table></div>
+<p><small>種別 Types: サウンディング実施/結果, 実施方針公表, 導入可能性調査等(FS), 民間提案募集, PPP/PFI調達・公募, 指定管理(参考), PRE更新(参考)。出典: 国交省PREポータル(2026-10-26スナップショット)・国交省官民連携サウンディング(近畿ブロック)・内閣府PFI事業DB/R7実施方針一覧・日本PFI・PPP協会 公開「お知らせ」欄(会員DBは不使用)・市町村公式サイト(サイト検索, 一部団体のみ)。日付は掲載日/更新日/開催日（date_basis列参照）。網羅的ではありません — 0件は「未検出」であり「なし」ではない。Not exhaustive: 0 = not found.</small></p></div>
 <div class="card full"><h2>一覧 Table</h2>
 <div class="ctl">範囲 Scope: <select id="scope"><option value="core">関西2府4県 core (198)</option><option value="all">+三重・福井 all (244)</option></select>
  検索 Search: <input id="q" size="12"> <small>列見出しクリックで並べ替え / click header to sort</small></div>
 <div class="tbl"><table id="t"></table></div>
 <p><small>ウエイト Weights: <span id="w"></span>。欠損成分はウエイト再配分、coverage&lt;60%は算出しない。出典 Sources: 総務省（財務書類指標R6・財政状況資料集R6(令和6年度決算)・地方公営企業年鑑R6(令和6年度決算)・主要財政指標R6・団体コード）、内閣府（PFI事業DB R7.3.31・地方公共団体PPP情報リストR7・優先的検討規程策定状況R7.3末）、国交省（PREポータル, 2026-10-26取得・国土数値情報N03 2024）、社人研（R5推計）。PDL1.0等に基づき加工。</small></p></div>
+<p style="grid-column:1/3;font-size:11px;color:#666;margin:0">License: code MIT / data CC BY 4.0 — 関西PPP/PFIパイプライン・ダッシュボード (Hao Yue), CC BY 4.0（原典: 総務省・内閣府・国交省・社人研 等の公開データを加工, PDL1.0 / CC BY 4.0; シグナル件名・リンク先は各団体に帰属） · <a href="https://github.com/stesea1/kansai-ppp-dashboard/blob/main/LICENSE-DATA.md">LICENSE-DATA.md</a></p>
 </div>
 <script>
 const D=window.PPP_DATA,W=window.PPP_WEIGHTS;document.getElementById('built').textContent='Build: '+window.PPP_BUILT;
 document.getElementById('w').textContent=Object.entries(W).map(([k,v])=>({s_ageing:'老朽化 ageing',s_pfi:'PFI実績 PFI track',s_yuusen:'優先的検討規程 rule',s_ready:'PPP体制 readiness',s_pre:'PRE掲載 PRE portal',s_fiscal:'財政力 fiscal',s_pop:'人口規模 population'}[k]+' '+v)).join(' / ');
 const f=(v,d=1)=>v===null||v===undefined?'<span class="na">NA</span>':(typeof v==='number'?v.toFixed(d):v);
 echarts.registerMap('kansai',window.PPP_GEO);
-const FAC=window.PPP_FAC,W1=window.PPP_WEIGHTS_V1;
+const FAC=window.PPP_FAC,W1=window.PPP_WEIGHTS_V1,W1P=window.PPP_WEIGHTS_V1PLUS,SG=window.PPP_SIGNALS;
 const MET=[['score','スコア Score (選択版)'],['ageing_rate_all','有形固定資産減価償却率(全体)%'],...Object.entries(FAC).map(([k,v])=>['fac_'+v,'施設類型: '+k+' %']),['w_pipe_ageing','水道 管路経年化率%'],['s_pipe_ageing','下水道 管渠老朽化率%'],['s_ageing_v1','v1老朽化成分(百分位)']];
 const met=document.getElementById('met');met.innerHTML=MET.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join('');
 const ver=()=>document.getElementById('ver').value, sc=r=>r['score_'+ver()];
 const mk=()=>met.value==='score'?'score_'+ver():met.value;
 const map=echarts.init(document.getElementById('map')),bar=echarts.init(document.getElementById('bar'));
-const cn={s_ageing:'老朽化 ageing',s_ageing_v1:'老朽化v1 ageing',s_pfi:'PFI実績',s_yuusen:'優先的検討規程',s_ready:'PPP体制',s_pre:'PRE掲載',s_fiscal:'財政力',s_pop:'人口規模'};
+const cn={s_ageing:'老朽化 ageing',s_ageing_v1:'老朽化v1 ageing',s_pfi:'PFI実績',s_yuusen:'優先的検討規程',s_ready:'PPP体制',s_pre:'PRE掲載',s_fiscal:'財政力',s_pop:'人口規模',s_signal:'直近シグナル signals'};
 function draw(){const k=mk(),hl=document.getElementById('hl').checked,vals=D.map(r=>r[k]).filter(v=>v!==null);
  const lab=MET.find(m=>m[0]===met.value)[1];document.getElementById('maph').textContent='地図 Map — '+lab+(met.value==='score'?' '+ver():'')+'（灰色=データなし NA）';
- map.setOption({tooltip:{formatter:p=>{const r=D.find(x=>x.pref+x.muni===p.name);return r?`${p.name}${r.untapped?' <b style="color:#c00">[未開拓]</b>':''}<br>${lab}: ${f(r[k])}<br>score v0/v1: ${f(r.score_v0)} / ${f(r.score_v1)}<br>減価償却率(全体): ${f(r.ageing_rate_all)}%<br>最高類型: ${r.worst_facility??'NA'} ${f(r.worst_facility_rate)}%<br>水道/下水道: ${f(r.w_pipe_ageing)} / ${f(r.s_pipe_ageing)}%<br>PFI件数: ${r.pfi_total} / 優先的検討規程: ${r.yuusen_r7_3?'○':'–'}`:p.name}},
+ map.setOption({tooltip:{formatter:p=>{const r=D.find(x=>x.pref+x.muni===p.name);return r?`${p.name}${r.untapped?' <b style="color:#c00">[未開拓]</b>':''}<br>${lab}: ${f(r[k])}<br>score v0/v1/v1+: ${f(r.score_v0)} / ${f(r.score_v1)} / ${f(r.score_v1plus)}<br>直近24ヶ月シグナル: ${r.signals_24m_n}件 (最新 ${r.last_signal_date??'–'})<br>減価償却率(全体): ${f(r.ageing_rate_all)}%<br>最高類型: ${r.worst_facility??'NA'} ${f(r.worst_facility_rate)}%<br>水道/下水道: ${f(r.w_pipe_ageing)} / ${f(r.s_pipe_ageing)}%<br>PFI件数: ${r.pfi_total} / 優先的検討規程: ${r.yuusen_r7_3?'○':'–'}`:p.name}},
   visualMap:{min:Math.min(...vals),max:Math.max(...vals),left:10,bottom:10,text:['高 high','低 low'],calculable:true,inRange:{color:['#f1faee','#a8dadc','#457b9d','#1d3557']}},
   series:[{type:'map',map:'kansai',roam:true,nameProperty:'name',itemStyle:{borderColor:'#fff',borderWidth:.4},emphasis:{label:{show:false}},
    data:D.map(r=>({name:r.pref+r.muni,value:r[k],itemStyle:(hl&&r.untapped)?{borderColor:'#e63946',borderWidth:2}:undefined}))}]},{replaceMerge:['series']});
- const WW=ver()==='v1'?W1:W,comp=Object.keys(WW);
+ const WW=ver()==='v1'?W1:ver()==='v1plus'?W1P:W,comp=Object.keys(WW);
  const top=D.filter(r=>sc(r)!==null&&r.region==='core').sort((a,b)=>sc(b)-sc(a)).slice(0,30).reverse();
  document.getElementById('barh').textContent='上位30団体 Top 30 (score_'+ver()+', 内訳 component contribution)';
  bar.setOption({tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},legend:{top:0,textStyle:{fontSize:10}},grid:{left:90,right:20,top:50,bottom:20},
@@ -53,10 +59,10 @@ function draw(){const k=mk(),hl=document.getElementById('hl').checked,vals=D.map
   series:comp.map(c=>({name:cn[c],type:'bar',stack:'s',data:top.map(r=>{const tw=comp.reduce((a,x)=>a+(r[x]===null?0:WW[x]),0);return r[c]===null?0:+(r[c]*WW[c]/tw).toFixed(1)})}))},{replaceMerge:['series','legend']});
  document.getElementById('w').textContent=Object.entries(WW).map(([k,v])=>cn[k]+' '+v).join(' / ');
  render();}
-const UC=[['untapped_rank','#',0],['pref','府県'],['muni','市町村'],['pop2020','人口2020',0],['s_ageing_v1','v1老朽化成分'],['ageing_rate_all','減価償却率(全体)%'],['worst_facility','最高類型'],['worst_facility_rate','その率%'],['n_fac_above_ruiji','類似平均超の類型数',0],['n_fac_v1','類型データ数',0],['w_pipe_ageing','水道 管路経年化%'],['s_pipe_ageing','下水 管渠老朽化%'],['pfi_total','PFI件数',0],['plan_ppp_policy','総合管理計画PPP方針'],['score_v0','v0'],['score_v1','v1']];
+const UC=[['untapped_rank','#',0],['pref','府県'],['muni','市町村'],['pop2020','人口2020',0],['s_ageing_v1','v1老朽化成分'],['ageing_rate_all','減価償却率(全体)%'],['worst_facility','最高類型'],['worst_facility_rate','その率%'],['n_fac_above_ruiji','類似平均超の類型数',0],['n_fac_v1','類型データ数',0],['w_pipe_ageing','水道 管路経年化%'],['s_pipe_ageing','下水 管渠老朽化%'],['pfi_total','PFI件数',0],['plan_ppp_policy','総合管理計画PPP方針'],['score_v0','v0'],['score_v1','v1'],['signals_24m_n','シグナル24ヶ月',0],['last_signal_date','最新シグナル'],['score_v1plus','v1+']];
 function tb(id,cols,rows){document.getElementById(id).innerHTML='<tr>'+cols.map(c=>`<th data-k="${c[0]}">${c[1]}</th>`).join('')+'</tr>'+rows.map(r=>'<tr'+(r.untapped?' style="background:#fff0f0"':'')+'>'+cols.map(c=>{let v=r[c[0]];if(v===true)v='○';else if(v===false)v='–';return '<td>'+f(v,c[2]??1)+'</td>'}).join('')+'</tr>').join('');}
 tb('u',UC,D.filter(r=>r.untapped).sort((a,b)=>a.untapped_rank-b.untapped_rank));
-const base=[['rank_core','順位v0(関西6府県)',0],['rank_v1_core','順位v1(関西6府県)',0],['pref','府県 Pref'],['muni','市町村 Municipality'],['score_v0','v0'],['score_v1','v1'],['untapped','未開拓'],['coverage_pct','充足%v0',0],['ageing_rate_all','減価償却率(全体)%'],['ageing_src','出典(全体)'],
+const base=[['rank_core','順位v0(関西6府県)',0],['rank_v1_core','順位v1(関西6府県)',0],['pref','府県 Pref'],['muni','市町村 Municipality'],['score_v0','v0'],['score_v1','v1'],['score_v1plus','v1+'],['signals_24m_n','シグナル24ヶ月',0],['last_signal_date','最新シグナル'],['untapped','未開拓'],['coverage_pct','充足%v0',0],['ageing_rate_all','減価償却率(全体)%'],['ageing_src','出典(全体)'],
  ['pfi_total','PFI件数 PFI',0],['pfi_since_fy2020','うち2020-',0],['pfi_contract_end_fy2026_30','契約終了2026-30',0],['yuusen_r7_3','優先的検討規程 R7.3'],['plan_ppp_policy','総合管理計画PPP方針'],['proposal_window','民間提案窓口'],
  ['project_list_public','事業リスト公表'],['pre_listings_now','PRE掲載数',0],['pre_updates_12m','PRE更新12ヶ月',0],['w_pipe_ageing','水道 管路経年化%'],['w_src','水道 出典'],['s_pipe_ageing','下水 管渠老朽化%'],['fiscal_index','財政力指数 Fiscal',2],['pop2020','人口2020 Pop',0],['pop_change_2050_pct','人口増減2050% ']];
 let sk='score_v0',sd=-1;
@@ -66,5 +72,19 @@ function render(){const scp=document.getElementById('scope').value,q=document.ge
  rows.sort((a,b)=>{const x=a[sk],y=b[sk];if(x===null||x===undefined)return 1;if(y===null||y===undefined)return -1;return (x>y?1:x<y?-1:0)*sd});
  tb('t',cols,rows);document.getElementById('t').querySelectorAll('th').forEach(h=>h.onclick=()=>{sd=(sk===h.dataset.k)?-sd:-1;sk=h.dataset.k;render()});}
 met.onchange=()=>{if(met.value!=='score'){sk=mk();sd=-1}draw()};document.getElementById('ver').onchange=()=>{if(sk.startsWith('score_'))sk='score_'+ver();draw()};
+const TN={sounding:'サウンディング実施',sounding_result:'サウンディング結果',jisshi_houshin:'実施方針公表',fs:'導入可能性調査等 FS',minkan_teian:'民間提案募集',procurement:'PPP/PFI調達・公募',shitei_kanri:'指定管理(参考)',pre_update:'PRE更新(参考)'};
+const UT=new Set(D.filter(r=>r.untapped).map(r=>r.code6));
+const sp=document.getElementById('sp'),st=document.getElementById('st'),tl=echarts.init(document.getElementById('tl'));
+sp.innerHTML+=[...new Set(D.map(r=>r.pref))].map(p=>`<option>${p}</option>`).join('');st.innerHTML+=Object.entries(TN).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+const esc=x=>String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function sig(){const p=sp.value,q=document.getElementById('sm').value.trim(),t=st.value,u=document.getElementById('su').checked;
+ const rows=SG.filter(r=>(!p||r.pref===p)&&(!q||r.muni.includes(q))&&(!t||r.type===t)&&(!u||UT.has(r.code6)));
+ document.getElementById('sn').textContent=rows.length+' 件 / items';
+ const months=[];for(let y=2024,mo=10;y<2026||(y===2026&&mo<=10);mo++){if(mo>12){mo=1;y++}months.push(y+'-'+String(mo).padStart(2,'0'))}
+ tl.setOption({tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},legend:{top:0,textStyle:{fontSize:10}},grid:{left:40,right:10,top:40,bottom:30},xAxis:{type:'category',data:months,axisLabel:{fontSize:10}},yAxis:{type:'value'},
+  series:Object.keys(TN).map(k=>({name:TN[k],type:'bar',stack:'s',data:months.map(m=>rows.filter(r=>r.type===k&&r.date.startsWith(m)).length)}))},{replaceMerge:['series']});
+ document.getElementById('sl').innerHTML='<tr><th>日付 Date</th><th>府県</th><th>市町村</th><th>種別 Type</th><th>施設 Facility</th><th style="text-align:left">件名 Title（原典リンク）</th><th>出典 Source</th><th>日付根拠</th></tr>'+
+  rows.slice().sort((a,b)=>(b.date||'0').localeCompare(a.date||'0')).map(r=>`<tr${UT.has(r.code6)?' style="background:#fff0f0"':''}><td>${r.date||('FY'+r.fy)}</td><td>${r.pref}</td><td>${r.muni}</td><td>${TN[r.type]||r.type}</td><td>${r.facility_type||''}</td><td style="text-align:left"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a></td><td>${r.source}</td><td>${esc(r.date_basis)}</td></tr>`).join('');}
+['sp','st','su'].forEach(i=>document.getElementById(i).onchange=sig);document.getElementById('sm').oninput=sig;sig();
 document.getElementById('hl').onchange=draw;document.getElementById('scope').onchange=render;document.getElementById('q').oninput=render;draw();
 </script></body></html>

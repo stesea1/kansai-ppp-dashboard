@@ -1,4 +1,4 @@
-# 关西 PPP/PFI × 公共设施老化 看板（v0 + 可选 v1，第2周）
+# 关西 PPP/PFI × 公共设施老化 看板（v0 + 可选 v1 / v1+，第3周）
 
 免费、离线可用的静态看板。为关西各市町村计算一个透明的 "PPP pipeline score"（早期信号层）。打开 `web/index.html` 即可，无需联网。
 
@@ -16,7 +16,11 @@
 - `web/index.html`：看板，使用本地 echarts.min.js 5.6.0（Apache-2.0）
 - `preview.png`：无头浏览器截图，截图时屏蔽了全部网络请求，证明离线可用
 
-重建：`python3 scripts/geo.py && python3 scripts/extract_shisetsu.py && python3 scripts/water.py && python3 scripts/build.py && python3 scripts/preview.py`
+- （W3）`scripts/polite.py`（只读抓取：遵守 robots.txt、同一主机间隔≥3 秒、本地缓存、标明身份的 UA；本环境 80 端口不通，http 链接先试同地址 https）、`scripts/signals_common.py`（分类规则）、`scripts/signals_collect.py`（结构化来源 → `raw/signals/candidates_structured.csv`）、`scripts/signals_resolve.py`（逐页确认日期 → `data/signals.csv`，丢弃记录 → `raw/signals/dropped.csv`）
+- （W3）`data/signals.csv`、`data/signals_seed_urls.csv`（站内检索得到的市町村页面）、`data/snapshots/pre_2026-10-26_*.csv`（PRE 门户快照，留作历史）
+- （W3）`LICENSE`（代码 MIT）、`LICENSE-DATA.md`（数据 CC BY 4.0）
+
+重建：`python3 scripts/geo.py && python3 scripts/extract_shisetsu.py && python3 scripts/water.py && python3 scripts/signals_collect.py && python3 scripts/signals_resolve.py && python3 scripts/build.py && python3 scripts/preview.py`（signals 两步会联网，有缓存时可离线重跑）
 
 ## 数据源（详见 sources_inventory.csv）
 - 总务省
@@ -91,6 +95,60 @@
   - 未开拓团体在地图上加红框、在表格中用浅红底色。
   - 新增未开拓列表。
 
+## W3 新增：近 24 个月信号层（2024-10-26 – 2026-10-26）
+- 收录类型（`type`）：
+  - `sounding` 实施，`sounding_result` 结果公布
+  - `jisshi_houshin` 实施方针公布
+  - `fs` 导入可能性调查（包括委托 FS 的公告）
+  - `minkan_teian` 民间提案募集或窗口
+  - `procurement` PPP/PFI 招标、公募、优先交涉权人决定
+  - 参考类：`shitei_kanri` 指定管理，`pre_update` PRE 门户刊登更新
+  - 卖地、命名权、研讨会等归为 other，不收录
+- 分类方法：对标题做关键词规则判断，见 `signals_common.classify`，先做 NFKC 归一化。
+- 日期：采用页面上的 更新日 / 公開日 / 掲載日，或列表上的刊登日（`date_basis` 列）。
+  - 没有日期的页面一律丢弃。
+  - 例外：标题写明"令和N年度"的，记为年度行（`fy`），只收 FY2025、FY2026。
+  - 没有任何条目是推测或编造的。
+- 来源（详见 sources_inventory）：
+  - 国交省 PRE 门户（附快照）
+  - 国交省官民连携 sounding 支援/登录案件
+  - 内阁府 PFI 事业 DB（至 2025-03）及 R7 实施方针一览
+  - 日本 PFI・PPP 协会公开的"お知らせ"栏：只用非会员页面，部分经 web.archive.org 回溯，只保存团体、日期、原文链接这类事实
+  - 市町村官网站内检索（未开拓团体，加约 17 个大城市）
+  - 大阪府的 sounding 列表
+- 去重：同一团体、URL、类型只保留一行；同一团体、标题、日期也只保留一行。来源优先级：市町村官网 > 国交省 > 内阁府 > 协会。
+- v1+（可选，v0 / v1 不变）：
+  - 计算方法：按类型加权件数，s_signal = log1p(加权和) / 最大值 × 100，再以权重 10 加入 v1。
+  - 类型权重：
+    - 实施方针、招标：3
+    - FS、sounding、sounding 结果、民间提案：2
+    - 指定管理、PRE 更新：0.5
+  - 已核对：v0 / v1 的所有列与 git 中旧版 scores.csv 完全一致，只新增了列。
+- 看板新增"直近24ヶ月シグナル"卡片：
+  - 按月堆叠的时间线
+  - 列表，可按府县、市町村、类型、"仅未开拓"筛选，标题直接链接原文
+  - 评分版本可选 v1+
+- 信号局限：
+  - "0 件"表示没找到，不代表没有。
+  - PRE 门户是自愿刊登，旧链接多为 404，这类条目已丢弃。
+  - 协会栏目是自主投稿，并非全量。
+  - 内阁府 DB 只到 2025-03，R7 一览只有年度。
+  - 兵庫県平台的案件一览尚在准备中，未使用。
+  - 大阪府列表以府自身的案件为主。
+  - 站内检索只覆盖了一部分团体。
+  - 分类靠标题关键词，procurement 一类口径偏宽，可能混入少量非 PPP 的普通公募型 proposal。
+- 已知问题（未修，等确认）：`build.py` 第 7 步解析 PRE 更新日志时，正则 `(\S+?[都道府県])` 是非贪婪的，"京都府"会在"京都"处被截断，导致京都府各团体的 `pre_updates_12m` 计为 0，影响 v0 / v1。修复会改变 v0 / v1 的分数，因此没有擅自修改。
+
+## 许可（W3）
+- 代码：MIT（`LICENSE`）。`web/echarts.min.js` 仍为 Apache-2.0。
+- 数据：CC BY 4.0（`LICENSE-DATA.md`），范围是 `data/`、`web/data.js`、`web/geo.js`。
+- 原始数据：
+  - 总务省、内阁府、国交省（含 PRE 门户）、社人研均为 PDL1.0。PDL1.0 与 CC BY 4.0 兼容（第 1.7 条）。
+  - 国土数值信息 N03 为 CC BY 4.0，原典为国土地理院，按測量法取得承认（R 5JHf 357）。
+- 不在 CC BY 授权范围内：
+  - 协会栏目的内容。协会站点规定未经同意不得复制、转载，因此只保留事实与链接。
+  - 各信号的标题和链接，权利归各团体。
+
 ## 局限
 1. 评分偏向大城市。人口、PFI 实绩、优先的检讨规程都与规模高度相关。去掉人口分项后，前 10 名基本不变。v0 适合用来做"可能发包"的初筛，不能当作商机排名。
 2. 整体偿却率还缺 8 个团体。设施类型数据缺滋贺县 19 个团体（府县发布的 xlsx 里没有施设类型表，概要版 PDF 里也没有）和箕面市，所以滋贺各团体的 v1 实际上只用整体值、水道和下水道（例如日野町只有 2 项类型数据）。火葬场、病院没有数据。
@@ -109,8 +167,7 @@
 - W2（已完成：设施类型、上下水道、v1、未开拓）
   - 尚未做：PRE 门户定期抓取及历史快照
   - 尚未做：从滋贺各市町官网补抓财政状况资料集
-- W3
-  - 抓取各市官网和府县 PPP 平台上的 sounding 型市场调查及实施方针公告（只读），加上日期，建立"近 24 个月信号"
+- W3（已完成：近 24 个月信号层、v1+、许可文件；PRE 快照已开始保存）
 - W4
   - 用 2015–2024 年的 PFI DB 做回测：v0 分数能否预测之后 2 年的实施方针公布，并据此调整权重
 - W5
