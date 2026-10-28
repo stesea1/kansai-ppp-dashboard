@@ -39,7 +39,7 @@ document.getElementById('w').textContent=Object.entries(W).map(([k,v])=>({s_agei
 const f=(v,d=1)=>v===null||v===undefined?'<span class="na">NA</span>':(typeof v==='number'?v.toFixed(d):v);
 echarts.registerMap('kansai',window.PPP_GEO);
 const FAC=window.PPP_FAC,W1=window.PPP_WEIGHTS_V1,W1P=window.PPP_WEIGHTS_V1PLUS,SG=window.PPP_SIGNALS;
-const MET=[['score','スコア Score (選択版)'],['ageing_rate_all','有形固定資産減価償却率(全体)%'],...Object.entries(FAC).map(([k,v])=>['fac_'+v,'施設類型: '+k+' %']),['w_pipe_ageing','水道 管路経年化率%'],['s_pipe_ageing','下水道 管渠老朽化率%'],['s_ageing_v1','v1老朽化成分(百分位)']];
+const MET=[['score','スコア Score (選択版)'],['ageing_rate_all','有形固定資産減価償却率(全体)%'],...Object.entries(FAC).map(([k,v])=>['fac_'+v,'施設類型: '+k+' %']),['w_pipe_ageing','水道 管路経年化率%'],['s_pipe_ageing','下水道 管渠老朽化率%'],['s_ageing_v1','v1老朽化成分(パーセンタイル)']];
 const met=document.getElementById('met');met.innerHTML=MET.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join('');
 const ver=()=>document.getElementById('ver').value, sc=r=>r['score_'+ver()];
 const mk=()=>met.value==='score'?'score_'+ver():met.value;
