@@ -48,4 +48,4 @@ Author: Hao Yue
 作成者: Hao Yue
 
 ---
-中文技术说明 / Technical notes (Chinese): [README_zh.md](README_zh.md)
+技術説明 / Technical notes: [TECHNICAL_NOTES.md](TECHNICAL_NOTES.md)
