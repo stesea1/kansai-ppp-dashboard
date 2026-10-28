@@ -200,11 +200,11 @@
 - W6
   - 公開前にライセンスと出典表示を確認し、GitHub Pages で公開
 
-### GitHub Pages への公開手順（作成時点のメモ）
-1. public リポジトリを新規作成し、`web/` ディレクトリの内容（index.html、echarts.min.js、data.js、geo.js）をルート直下または `docs/` 配下に置く
-2. Settings → Pages → Source で main ブランチの /(root) または /docs を選択
-3. ページのフッターに出典を残す：「総務省・内閣府・国土交通省（国土数値情報）・社人研のデータを加工して作成」
-4. raw/ はスクリプトと URL のみ公開し、原データファイルはアップロード不要
+### 公開と更新（GitHub Pages）
+- 公開 URL：https://stesea1.github.io/kansai-ppp-dashboard/ （main ブランチのルートから GitHub Pages で配信）
+- ルートの `index.html` は `web/` へ転送するだけのページで、看板本体は `web/index.html` です。
+- データを更新するときは、上記の再構築コマンドで `web/data.js` と `web/geo.js` を作り直し、main に push すれば数分で公開サイトに反映されます。
+- `raw/` の原データファイルはリポジトリに含めていません。取得元の URL は `data/sources_inventory.csv` に、取得手順は `scripts/` にあります。
 
 ---
 
@@ -406,8 +406,8 @@ Each component is first converted to a 0–100 score, then a weighted average is
 - W6
   - Check licences and attributions before release, publish on GitHub Pages
 
-### Steps for publishing to GitHub Pages (notes written at the time)
-1. Create a new public repo and put the contents of `web/` (index.html, echarts.min.js, data.js, geo.js) at the root or under `docs/`
-2. Settings → Pages → Source: choose /(root) or /docs on the main branch
-3. Keep the attribution in the page footer: "Processed from data by MIC, Cabinet Office, MLIT (National Land Numerical Information) and IPSS" (「総務省・内閣府・国土交通省（国土数値情報）・社人研のデータを加工して作成」)
-4. For raw/, publish only the scripts and URLs; the original files need not be uploaded
+### Publishing and updates (GitHub Pages)
+- Live site: https://stesea1.github.io/kansai-ppp-dashboard/ (served by GitHub Pages from the root of the main branch)
+- The root `index.html` only redirects to `web/`; the dashboard itself is `web/index.html`.
+- To update the data, run the rebuild command above to regenerate `web/data.js` and `web/geo.js`, then push to main; the live site updates within a few minutes.
+- The original files under `raw/` are not committed. Their source URLs are listed in `data/sources_inventory.csv`, and the download steps are in `scripts/`.
